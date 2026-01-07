@@ -644,8 +644,8 @@ immediately after printing `"abc"`.
 
 Compile and run `exercises.c`.
 
- 41. What differences do you observe in the output of the strings using
-     `fprintf()` vs. using `write()` and why?
+ 41. What is the order of the letters? (Exclude the newline.)  Why has it
+     changed?
 
 
 ### Summary and Main Points

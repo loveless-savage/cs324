@@ -697,9 +697,10 @@ export CS324_VAR=foo
  42. Which of the three commands above resulted in:
      "CS324\_VAR is \_\_\_\_" being output?
 
- 43. If command 3 were executed again, what would be the output?
+ 43. If command 3 were executed again, what would be the output?  Briefly explain
+     your answer.
 
- 44. (Upload your edited `exercises.c` file to LearningSuite.)
+ 45. (Upload your edited `exercises.c` file to LearningSuite.)
 
 
 ### Summary and Main Points

@@ -120,7 +120,7 @@ question, you will need open specific man pages and look for specific content.
  3. What is the return value of a successful call to the `open()` system call?
  4. What is the return value of the `open()` system call when an error is
     encountered?
- 5. What file should be included in a C program with `#include` to use the
+ 5. What files should be included in a C program with `#include` to use the
     `close()` system call?
  6. What does the integer argument passed to `close()` system call represent?
     Hint: the argument name is abbreviation for these two words.

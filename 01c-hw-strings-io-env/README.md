@@ -427,7 +427,7 @@ so each printout shows up on its own line.
 Compile and run `exercises.c`.
 
  14. Is there a difference between what was printed by `printf()` and what was
-     printed by `write()`?  Why or why not?*  (Hint: See the `s` Conversion
+     printed by `write()`?  Why or why not?  (Hint: See the `s` Conversion
      Specifier in the man page for `printf(3)`.)
 
 Now print out the contents of `buf` to standard _error_ (not standard

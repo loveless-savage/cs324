@@ -202,24 +202,24 @@ some important differences:
 The following snippets all yield equivalent results:
 
 ```c
-# Use an integer literal
+// Use an integer literal
 printf("hello %d\n", 42);
 ```
 
 ```c
-# Use an int variable
+// Use an int variable
 int val = 42;
 printf("hello %d\n", val);
 ```
 
 ```c
-# Specify the stdout file stream explicitly
+// Specify the stdout file stream explicitly
 fprintf(stdout, "hello %d\n", 42);
 ```
 
 ```c
-# Use the write() system call directly instead of calling printf().
-# write() does not have buffering like printf() does.
+// Use the write() system call directly instead of calling printf().
+// write() does not have buffering like printf() does.
 write(STDOUT_FILENO, "hello 42\n", 9);
 ```
 

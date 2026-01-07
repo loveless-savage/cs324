@@ -128,7 +128,7 @@ question, you will need open specific man pages and look for specific content.
     possible for multiple file descriptors to refer to the same file
     description?  Hint: see the second paragraph.
  8. According to the "DESCRIPTION" section of the man page for `string`, the
-    functions referred in that man page are used to perform operations on
+    functions referred to in that man page are used to perform operations on
     strings that are ________________. (fill in the blank)
  9. According to the "DESCRIPTION" section of the man page for the `strcpy()`
     function, the programmer is responsible for making sure `dst` refers to a

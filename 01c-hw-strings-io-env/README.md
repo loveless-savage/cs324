@@ -566,7 +566,7 @@ Repeat the instructions preceding question 22, but this time read up to
 
  31. What would happen if `BUFSIZE` had been specified, instead of
      `BUFSIZE - totread` and there were still `BUFSIZE` bytes available to
-     read?
+     read?  Hint: experiment with it!
 
 Repeat the instructions preceding question 26.
 

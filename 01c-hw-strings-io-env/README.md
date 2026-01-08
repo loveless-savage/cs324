@@ -455,7 +455,7 @@ Compile `exercises.c`.  Then run the program according to the following:
    command line.
  - Run the program with "2> /dev/null" (no quotes) appended to the end of the
    command line.
- - Run the program with "2> /dev/null 2>&1" (no quotes) appended to the
+ - Run the program with "> /dev/null 2>&1" (no quotes) appended to the
    end of the command line.
 
  15. What output do you see when the program is run normally?
@@ -467,7 +467,7 @@ Compile `exercises.c`.  Then run the program according to the following:
      appended?
 
  18. What happens to the output when you the program is run with
-     "2> /dev/null 2>&1" appended?
+     "> /dev/null 2>&1" appended?
 
 Now let's be hands-on with files beyond standard input, standard output, and
 standard error.  Let's start by opening a file with the `open()` system call.

@@ -17,10 +17,9 @@ on remotely, please follow these instructions.
     To log on to a CS lab machine remotely, you must first gain access to the CS
     network.  There are two ways to access the CS network:
 
-> [!TIP]
-> Note that the two options below -- "eduroam" and the BYU CS VPN -- require
-> that you use your BYU credentials to authenticate; that is, your BYU NetID
-> and password.
+    Note that the two options below -- "eduroam" and the BYU CS VPN -- require
+    that you use your BYU credentials to authenticate; that is, your BYU NetID
+    and password.
 
     - *If you are in the TMCB*, simply connect to the "eduroam" WiFi.  If you
       are in the TMCB and you are currently enrolled in a CS class, then

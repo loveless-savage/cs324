@@ -10,7 +10,7 @@
 
 **Why VS Code?** [Visual Studio Code](https://code.visualstudio.com/) is a free, open source cross-platform editor.  VS Code is a very popular IDE for its versitility and ability to work with most langugages, (unlike programs such as PyCharm or Intellij IDEA which both specialize in one language).  VS Code is a great pick for the CS 324 course since the IDE can easily be set up to allow for remote development via SSH.  By using this feature, you get the benefits of programming on another machine remotely while still enjoying the benefits of an IDE.  This can include IntelliSense, debugging, and much more!  Being able to use Vim/Nano is a valuable skill and comes in handy, however, VS Code can make the coding experience much more enjoyable.  This document will walk through setting up VS Code for remotely accessing university lab machines.
 
-*NOTE: If you have not set up remote access to the lab machines or are having issues with connecting, you can try looking at [this link](https://docs.cs.byu.edu/doku.php?id=setting-up-your-account-with-the-cs-authentication-system)*
+*NOTE: If you have not set up remote access to the lab machines or are having issues with connecting, you can try looking at [this link](../../REMOTE_ACCESS.md)*
 
 ---
 

@@ -5,7 +5,7 @@ environment, including redirection, pipelining, backgrounding, and more.  Read
 the entire assignment before beginning!
 
 
-# Maintain Your Repository
+## Maintain Your Repository
 
  Before beginning:
  - [Mirror the class repository](../01a-hw-private-repo-mirror), if you haven't
@@ -13,50 +13,106 @@ the entire assignment before beginning!
  - [Merge upstream changes](../01a-hw-private-repo-mirror#update-your-mirrored-repository-from-the-upstream)
    into your private repository.
 
- As you complete the assignment:
- - [Commit changes to your private repository](../01a-hw-private-repo-mirror#commit-and-push-local-changes-to-your-private-repo).
 
-
-# Preparation
-
-NOTE: Throughout this exercise, you _must_ run the `ssh` commands **on** a BYU CS
-lab machine, or you will get unexpected results. For example, using `ssh` to login
-remotely to the lab machines, and then calling the `ssh` commands from there.
+## Preparation
 
 Using the guidance from the
 [remote access information page](../REMOTE_ACCESS.md), log in to a CS lab
 machine.
 
+> [!IMPORTANT]
+> Throughout this assignment you _must_ contact the remote bandit machine
+> (`imaal.byu.edu`) from a CS lab machine.  That is, you must use the `ssh`
+> command from a CS lab machine.  For security reasons, `imaal.byu.edu` is
+> configured to only allow logins from CS lab machines, so if you try to
+> connect from any other location, you will get unexpected results.
 
-# Instructions
+
+## Instructions
 
 Follow these steps:
 
- 1. Use the SSH program to log in remotely to the computer imaal.byu.edu with
+ 1. Use the SSH program to log in remotely to the computer `imaal.byu.edu` with
     username `bandit0` and password `bandit0`:
 
     ```bash
     ssh bandit0@imaal.byu.edu
     ```
 
- 2. Follow the instructions in the file `readme` to get the password for Level
-    1 (hint: use `cat` to get started).
+ 2. Look at the contents of the `readme` file in the current directory, which
+    is `bandit0`'s home directory.  Use `cat readme` to display the contents on
+    the terminal.
 
- 3. Close out your session to log out of imaal.byu.edu (`ctrl`+`d` or `exit`).
+ 3. Use the hints to find the password for Level 1 (`bandit1`) using
+    a series of one or more command-line tools, possibly with output
+    redirection.
 
- 4. Use SSH to again log in to imaal.byu.edu, this time with username `bandit1`
-    and the password you obtained for Level 1.
+ 4. If more than one command-line tool is used, arrange the multiple commands
+    used into a single pipeline, such that the password for Level 1 is the only
+    output.  Save both the password and the output.  See below for helps and
+    examples.
 
- 5. Repeat steps 2 through 4 through Level 10, such that you can log in to
-    imaal.byu.edu successfully as the `bandit10` user.
+    Note that for the command used to obtain the password for Level 8 (i.e., as
+    the `bandit7` user), a pipeline does not make sense.  Just include the
+    first command used.
 
-For each level, except Level 8 (i.e., as a the `bandit7` user), you need to use
-a combination of input/output redirection and/or pipelining, such that you can
-get a single pipeline command (i.e., a "one-liner") to output just the password
-for the next level, on a single line.  In some cases, the pipeline might just
-contain a single command (example: learning the password for Level 1).  For
-most cases, however, more than one command is required.  For example, consider
-the following pipeline:
+ 5. Close out your session to log out of `imaal.byu.edu` (`ctrl`+`d` or
+    `exit`).
+
+ 6. Use SSH to again log in to `imaal.byu.edu`, this time with username
+    `bandit1` and the password you obtained for Level 1.
+
+ 7. Repeat steps 2 through 6, for levels 1 through 10, such that you can log in
+    to `imaal.byu.edu` successfully as the `bandit10` user.
+
+ 8. Create a file called `bandit.txt` with the passwords and pipelines that you
+    have created, using the following format:
+
+    ```bash
+    Level 0:
+    PASSWORD1
+    PIPELINE1
+    Level 1:
+    PASSWORD2
+    PIPELINE2
+    ...
+    ```
+
+    Where `PASSWORD1` is the password for the `bandit1` user, and `PIPELINE1`
+    is the pipeline used to obtain that password in Level 0 (i.e., as the
+    `bandit0` user), etc.
+
+    We remind you that the pipeline used to obtain the password for Level 8
+    does not require any more than a single command. You do not need to include
+    what you did to suspend and resume, but you must include the initial
+    command.
+
+    Note that following the format above is important, as it will allow your
+    assignment to be graded automatically. Do not add extra new lines, spaces,
+    or formatting.
+
+
+## Automated Testing
+
+For your convenience, a script is also provided for automated testing.  This is
+not a replacement for manual testing but can be used as a sanity check.  You
+can use it by simply running the following:
+
+```bash
+./SshTester.py bandit.txt
+```
+
+Please note this is the same script that the TAs use to grade.
+
+
+## Helps
+
+### Pipelines
+
+In the simplest case, a pipeline is only a single command.  An example is the
+command used to obtain the password for Level 1.  However, in more complex
+examples, two or more commands are linked together using pipes, such as the
+following:
 
 ```bash
 grep bar somefile.txt | awk '{ print $8 }' | base64 -d
@@ -68,85 +124,6 @@ standard input of the `awk` command (via a pipe), and the standard output of
 `awk` was connected to the standard input of the `base64` command (via a pipe).
 There was no further command in the pipeline, so `base64`'s standard output
 simply goes to the console.
-
-When learning the password for Level 8 (i.e., as the `bandit7` user), the
-suspend/resume does not need to be done as part of the "one-liner".  Those
-require keystrokes after the program has been executed.  Just use the single
-command.
-
-
-# Submission Format
-
-As you go, create a file `bandit.txt` that has the following format:
-
-```bash
-Level 0:
-PASSWORD1
-PIPELINE1
-Level 1:
-PASSWORD2
-PIPELINE2
-...
-```
-
-`PASSWORD1` represents the password for Level 1, and `PIPELINE1` is the actual
-pipeline of commands (i.e., "one-liner") you used to get that password while
-logged in as `bandit0`, etc.  For example:
-
-```bash
-Level 0:
-0G3wlqW6MYydw4jQJb99pW8+uISjbJhe
-foo
-Level 1:
-xJJHpfRpbE7F2cAt8+V9HLEoZEzZqvi+
-grep bar somefile.txt | awk '{ print $8 }' | base64 -d
-...
-```
-
-Note that following the format above is important, as it will allow your
-assignment to be graded automatically. Do not add extra new lines, spaces, or formatting.
-
-Again, the pipeline for Level 8 does not require any more than what was used to
-_start_ the command; you do not need to include what you did to suspend and
-resume, but you must include that command.
-
-
-# Automated Testing
-
-For your convenience, a script is also provided for automated testing.  This is
-not a replacement for manual testing but can be used as a sanity check.  You
-can use it by simply running the following:
-
-```bash
-./SshTester.py bandit.txt
-```
-
-Please note this is the same script the TA's use to grade. If it doesn't work
-for you, it won't work for them.
-
-# Helps
-
-## Useful Commands
-
-Here are some commands that you might use to help you:
-
- - `awk`
- - `base64`
- - `cat`
- - `curl`
- - `cut`
- - `dig`
- - `grep`
- - `gzip`
- - `head`
- - `md5sum`
- - `sha1sum`
- - `sort`
- - `tar`
- - `uniq`
-
-
-## Building a Pipeline Incrementally
 
 You might feel overwhelmed with the "pipeline" aspect of this assignment.  To
 help you out, build the pipeline gradually.  For example, in the above example,
@@ -169,11 +146,31 @@ grep bar somefile.txt | awk '{ print $8 }' | base64 -d
 ```
 
 
-## Other Helps
+### Useful Commands
+
+Here are some commands that you might use to help you:
+
+ - `awk`
+ - `base64`
+ - `cat`
+ - `curl`
+ - `cut`
+ - `echo`
+ - `grep`
+ - `gzip`
+ - `head`
+ - `md5sum`
+ - `sha1sum`
+ - `sort`
+ - `tar`
+ - `uniq`
+
+
+### Other Helps
 
  - Use the man pages to learn about a command, as they are the primary
    documentation!  You can find helpful examples on the Web, but note that the
-   man pages on the web might not be the same *version* as the man pages on the
+   man pages on the web might not be the same _version_ as the man pages on the
    lab machines.
  - To suspend the pipeline currently running in the foreground, use `ctrl`+`z`.
    Use `fg` to resume.  For more information, See the sections on
@@ -229,17 +226,12 @@ grep bar somefile.txt | awk '{ print $8 }' | base64 -d
    ```bash
    awk '{ print $2 }'
    ```
- - `dig` and `curl` and are commands used to issue a request to a Domain Name
-   System (DNS) server and HyperText Transfer Protocol (HTTP) server,
-   respectively.  You can try them out with different domain names, types, or
-   URLs, to see how they work, but you shouldn't need to do anything fancy with
-   them for this assignment.  You will find the `+short` option useful for
-   `dig`.  For example, to query for the `A` record for `example.com` use:
-   ```bash
-   dig +short example.com A
-   ```
+ - `curl` is a command used to issue a request to a HyperText Transfer Protocol
+   (HTTP) server, otherwise known as a Web server.  This is what your browser
+   does to retrieve content. The difference is that `curl` simply prints the
+   contents of what it retrieves to standard output.
 
 
-# Submission
+## Submission
 
 Upload `bandit.txt` to the assignment page on LearningSuite.

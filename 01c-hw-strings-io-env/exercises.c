@@ -101,7 +101,7 @@ void part3(char *filename) {
 	printf("%s",buf);
 	printf("\n");
 	write(STDOUT_FILENO,buf,BUFSIZE);
-	printf("\nTODO\n");
+	printf("\n");
 
 	fprintf(stderr, "-- Questions 15 through 18\n");
 	fprintf(stderr,"%s\n",buf);

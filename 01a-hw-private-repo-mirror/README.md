@@ -145,9 +145,8 @@ will also be a mirror of the upstream class repository.
     (Substitute "CLASS\_REPO\_PATH" with the path of the upstream class
     repository.)
 
-    git clone --bare https://github.com/{{class_repo_path}} upstream-repo
     ```bash
-    git clone --bare https://github.com/{{class_repo_path}} upstream-repo
+    git clone --bare https://github.com/CLASS_REPO_PATH upstream-repo
     ```
 
  4. Push a mirror of the upstream repository to the new, private repository,

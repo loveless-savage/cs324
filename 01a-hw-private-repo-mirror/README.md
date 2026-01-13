@@ -142,7 +142,7 @@ will also be a mirror of the upstream class repository.
  3. Clone the upstream class repository by running the following command in the
     terminal:
 
-    (Substitute "CLASS\_REPO\_PATH" with the path of the upstream class
+    (Replace "CLASS\_REPO\_PATH" with the path of the upstream class
     repository.)
 
     ```bash
@@ -152,7 +152,7 @@ will also be a mirror of the upstream class repository.
  4. Push a mirror of the upstream repository to the new, private repository,
     which you have just created:
 
-    (Substitute "USERNAME" with your GitHub username and "PRIVATE\_REPO\_NAME"
+    (Replace "USERNAME" with your GitHub username and "PRIVATE\_REPO\_NAME"
     with the name of your private repository.)
 
     ```bash
@@ -176,7 +176,7 @@ created.
  1. Clone your new, private repository, which is now a mirror of the upstream
     class repository:
 
-    (Substitute "USERNAME" with your GitHub username and "PRIVATE\_REPO\_NAME"
+    (Replace "USERNAME" with your GitHub username and "PRIVATE\_REPO\_NAME"
     with the name of your private repository.)
 
     ```bash
@@ -185,7 +185,7 @@ created.
 
  2. Add the upstream repository to your clone:
 
-    (Substitute "PRIVATE\_REPO\_NAME" with the name of your private repository
+    (Replace "PRIVATE\_REPO\_NAME" with the name of your private repository
     and "CLASS\_REPO\_PATH" with the path of the upstream class repository.)
 
     ```bash

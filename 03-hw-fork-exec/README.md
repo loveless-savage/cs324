@@ -89,14 +89,13 @@ machine.
     is coming next.
 
  2. Type `ctrl`+`b` (the tmux command sequence).  Then release the keys and
-    enter `%` (double quotation mark).  This will split the window in tmux
-    vertically into two panes and create a separate shell instance in the
-    newly-created right pane.  We will learn how to navigate between those
-    panes shortly.
+    enter `%` (percent sign).  This will split the window in tmux vertically
+    into two panes and create a separate shell instance in the newly-created
+    right pane.  We will learn how to navigate between those panes shortly.
     
- 3. Type `ctrl`+`b` followed by `"` (percent sign).  This will split the right
-    pane (i.e., where your "focus" is) horizontally and create a separate shell
-    instance in the new pane (i.e., the one on the lower right).
+ 3. Type `ctrl`+`b` followed by `"` (double quotation mark).  This will split
+    the right pane (i.e., where your "focus" is) horizontally and create a
+    separate shell instance in the new pane (i.e., the one on the lower right).
 
  4. Run the following command in the newly created pane:
 
@@ -113,9 +112,9 @@ machine.
 
     Note that you can use `ctrl`+`b` followed by an arrow key to move the focus
     between open panes, in the direction of the arrow you pressed.  Try moving
-    around within the panes.
+    the focus around from pane to pane.
 
- 6. Type `ctrl`+`b` then `d` to detach from your current tmux instance.
+ 6. Type `ctrl`+`b` then `d` to "detach" from your current tmux instance.
 
  7. Run the following command:
 
@@ -126,22 +125,42 @@ machine.
     This should reattach you to the tmux instance that you were working on
     earlier, and it should look exactly as it did before you detached.
 
- 8. Move the focus to the lower-right pane.
+ 8. Move the focus to the lower-right pane.  Run the following command:
+
+    ```bash
+    head fork.c
+    ```
+
+    This will print out the first 10 lines of `fork.c`.  You might find that
+    the pane is a little constrained to view the contents well.
+
+    Type `ctrl`+`b` then `z` to "zoom" into (i.e., show only) the lower-right
+    pane, which is where the focus currently is.  Zooming into a given pane
+    adjusts the pane to use the entire space from the window for the zoomed
+    pane.
+
+    When a pane is zoomed, it is easier to copy things from the pane (i.e., for
+    pasting elsewhere).  While holding down the `shift` key, select with your
+    mouse the area you want to copy.  Use `ctrl`+`shift`+`c` or `ctrl`+`c` to
+    copy the highlighted text.
+
+    Finally, type `ctrl`+`b` then `z` to "un-zoom" the selected pane and to see
+    the other panes as you left them.
 
  9. In the lower-right pane, type either `exit` then `Enter` _or_ press
     `ctrl`+`d` (without the command prefix).  Either will close that shell and
     the pane in which it is running.  (Note that `ctrl`+`d` effectively signals
     end-file-file to the shell's standard input, causing the shell to exit.)
 
-    You should now have a tmux setup that looks like this:
+You should now have a tmux setup that looks like this:
 
-    ```
-    ----------------------------
-    |  command   |   system    |
-    | execution  |  analysis   |
-    |            |             |
-    ----------------------------
-    ```
+```
+----------------------------
+|  command   |   system    |
+| execution  |  analysis   |
+|            |             |
+----------------------------
+```
 
 
 ## Part 1: `fork()` Overview
@@ -192,17 +211,6 @@ should read all of problems 4 through 11 before you start.
 
     *Show the two `ps` commands you used, each followed by its respective
     output.*
-
-    Hint: to copy the command and output from only a single tmux pane, do the
-    following:
-
-    - Navigate focus to the pane from which you want to copy.
-    - Press `ctrl`+`b` then `z` to "zoom" into (i.e., show only) the selected
-      pane.
-    - While holding down the `shift` key, select with your mouse the area you
-      want to copy.
-    - Use `ctrl`+`shift`+`c` or `ctrl`+`c` to copy the hightlighted text.
-    - Press `ctrl`+`b` then `z` to "un-zoom" the selected pane.
 
  5. *What is different between the output of the two `ps` commands?  Briefly
     explain.*

@@ -216,7 +216,7 @@ representations of the byte values, so the output on the right is mostly `.`.
 Note that you can find the hexadecimal representation of your user ID, the
 seed, and any other integer, by running the following from the command line:
 
-Substitute "123456789" with the integer--represented in decimal--that you wish
+Replace "123456789" with the integer--represented in decimal--that you wish
 you represent as hexadecimal.
 
 ```bash

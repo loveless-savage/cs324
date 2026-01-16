@@ -383,7 +383,7 @@ Your CGI program should have _mostly_ the same behavior as that you observed in
 
 Test your program by compiling it and placing the resulting binary in
 `www/cgi-bin`.  Then run the same `curl` command line that you used for URL
-(e) above, substituting "myprog1" (with file extension, as appropriate) for
+(e) above, replacing "myprog1" (with file extension, as appropriate) with
 "myprog".  The response headers (beginning with the "Content-Type" header) and
 the response body returned for `myprog1` should match those for `myprog`, _byte
 for byte_, except that "Hello world" will be replaced with "Hello CS324" in the

@@ -6,7 +6,7 @@ iterative exercises and examining the resulting output.  Read the entire
 assignment before beginning!
 
 
-# Maintain Your Repository
+## Maintain Your Repository
 
  Before beginning:
  - [Mirror the class repository](../01a-hw-private-repo-mirror), if you haven't
@@ -18,36 +18,152 @@ assignment before beginning!
  - [Commit changes to your private repository](../01a-hw-private-repo-mirror#commit-and-push-local-changes-to-your-private-repo).
 
 
-# Preparation
+## Preparation
 
- 1. Read the following in preparation for this assignment:
+### Reading
 
-    - Sections 8.2 - 8.4 and 10.8 - 10.10 in the book
+Read the following in preparation for this assignment:
 
-    Additionally, man pages for the following are also referenced throughout
-    the assignment:
+ - Sections 8.2 - 8.4 and 10.8 - 10.10 in the book
 
-    - `fork(2)`
-    - `execve(2)`
-    - `pipe(2)`, `pipe(7)`
-    - `dup2(2)`
+Additionally, man pages for the following are also referenced throughout the
+assignment:
 
- 2. Run `make` to build two executables: `fork` and `exec`.  These are programs
-    that illustrate the system calls `fork()` and `execve()`.
+ - `fork(2)`
+ - `execve(2)`
+ - `pipe(2)`, `pipe(7)`
+ - `dup2(2)`
 
- 3. Start a [tmux session](../01c-hw-remote).  Create two panes, such that the
-    window looks like this:
 
+### `make` and `Makefile`
+
+In a [previous assignment](../01c-hw-strings-io-env), you used `gcc` directly
+to compile your C code.  While `gcc` will still be used for code compilation,
+in this assignment and future assignments, you will use the program `make` to
+simplify compiliation.  `make` looks for a file called `Makefile` that contains
+some instructions to follow.
+
+Display the contents of `Makefile`, contained in the directory associated with
+this assignment.
+
+```make
+fork: fork.c
+	$(CC) $(CFLAGS) -o fork fork.c
+```
+
+The following lines indicate that: 1) the executable `fork` comes from
+`fork.c`; and 2) the command to build `fork` from `fork.c` is
+`$(CC) $(CFLAGS) -o fork fork.c`.  But before the command is run, `$(CC)` and
+`$(CFLAGS)` are replaced with the values that were assigned to them earlier in
+the file.  That is, `make` is calling `gcc` with certain flags.
+
+Run `make` to build two executables: `fork` and `exec`.  These are programs
+that illustrate the system calls `fork()` and `execve()`.
+
+
+### tmux
+
+The purpose of this section is to familiarize you with tmux.  tmux is used in
+this and future assignments to create a remote terminal environment with
+multiple windows or "panes" to interact with.
+
+Using the guidance from the
+[remote access information page](../REMOTE_ACCESS.md), log in to a CS lab
+machine.
+
+ 1. Run the following command:
+
+    ```bash
+    tmux
     ```
-    ----------------------------
-    |  command   |   system    |
-    | execution  |  analysis   |
-    |            |             |
-    ----------------------------
+
+    Your screen will look similar to how it did before, but note that the shell
+    instance corresponding to the prompt you are seeing is running within tmux,
+    a terminal multiplexer.  The idea is that you can now instantiate other
+    shells on the same remote machine, in different "windows" and "panes"
+    displayed alongside one another, disconnect and re-connect to your tmux
+    instance on the remote machine, and more.
+ 
+    tmux is controlled by entering commands, following a special key sequence:
+    `ctrl`+`b`. The `ctrl`+`b` sequence is used to let tmux know that a command
+    is coming next.
+
+ 2. Type `ctrl`+`b` (the tmux command sequence).  Then release the keys and
+    enter `%` (percent sign).  This will split the window in tmux vertically
+    into two panes and create a separate shell instance in the newly-created
+    right pane.  We will learn how to navigate between those panes shortly.
+    
+ 3. Type `ctrl`+`b` followed by `"` (double quotation mark).  This will split
+    the right pane (i.e., where your "focus" is) horizontally and create a
+    separate shell instance in the new pane (i.e., the one on the lower right).
+
+ 4. Run the following command in the newly created pane:
+
+    ```bash
+    echo hello world
     ```
 
+ 5. Move the focus to the left pane (`ctrl`+`b` then left arrow), and run the
+    following in the left pane:
 
-# Part 1: `fork()` Overview
+    ```bash
+    echo hello BYU
+    ```
+
+    Note that you can use `ctrl`+`b` followed by an arrow key to move the focus
+    between open panes, in the direction of the arrow you pressed.  Try moving
+    the focus around from pane to pane.
+
+ 6. Type `ctrl`+`b` then `d` to "detach" from your current tmux instance.
+
+ 7. Run the following command:
+
+    ```bash
+    tmux attach
+    ```
+
+    This should reattach you to the tmux instance that you were working on
+    earlier, and it should look exactly as it did before you detached.
+
+ 8. Move the focus to the lower-right pane.  Run the following command:
+
+    ```bash
+    head fork.c
+    ```
+
+    This will print out the first 10 lines of `fork.c`.  You might find that
+    the pane is a little constrained to view the contents well.
+
+    Type `ctrl`+`b` then `z` to "zoom" into (i.e., show only) the lower-right
+    pane, which is where the focus currently is.  Zooming into a given pane
+    adjusts the pane to use the entire space from the window for the zoomed
+    pane.
+
+    When a pane is zoomed, it is easier to copy things from the pane (i.e., for
+    pasting elsewhere).  While holding down the `shift` key, select with your
+    mouse the area you want to copy.  Use `ctrl`+`shift`+`c` or `ctrl`+`c` to
+    copy the highlighted text.
+
+    Finally, type `ctrl`+`b` then `z` to "un-zoom" the selected pane and to see
+    the other panes as you left them.
+
+ 9. In the lower-right pane, type either `exit` then `Enter` _or_ press
+    `ctrl`+`d` (without the command prefix).  Either will close that shell and
+    the pane in which it is running.  (Note that `ctrl`+`d` effectively signals
+    end-file-file to the shell's standard input, causing the shell to exit.)
+
+You should now have a tmux setup that looks like this:
+
+```
+----------------------------
+|  command   |   system    |
+| execution  |  analysis   |
+|            |             |
+----------------------------
+```
+
+
+## Part 1: `fork()` Overview
 
 Open `fork.c`, and look at what it does.  Then answer the following questions.
 Note that you will be _testing_ the behavior of `fork.c` in Part 2, so you will
@@ -62,7 +178,7 @@ want to consider these questions as you go through that part.
     process?*
 
 
-# Part 2: `fork()` Experimentation
+## Part 2: `fork()` Experimentation
 
 The `ps` command prints information about processes on the system.  Which
 processes are included and what information is printed about them depends on
@@ -95,16 +211,6 @@ should read all of problems 4 through 11 before you start.
 
     *Show the two `ps` commands you used, each followed by its respective
     output.*
-
-    Note: to copy the command and output from only a single tmux pane, do the
-    following:
-
-    - Select the pane from which you want to copy.
-    - Push `ctrl`+`b` then `z` to "zoom" into (i.e., show only) the selected
-      pane.
-    - Hold down `shift` and select with your mouse the area you want to copy.
-    - Copy (`ctrl`+`c` or `ctrl`+`shift`+`c`) the hightlighted text.
-    - Push `ctrl`+`b` then `z` to "un-zoom" the selected pane.
 
  5. *What is different between the output of the two `ps` commands?  Briefly
     explain.*
@@ -159,7 +265,7 @@ Now would be a good time to review questions 1 through 3, both to confirm or
 update your answers and to check your understanding.
 
 
-# Part 3: File Descriptor Inheritance and File Description Sharing
+## Part 3: File Descriptor Inheritance and File Description Sharing
 
 In this section, you will learn hands-on how file descriptors are inherited by
 child processes, and how two different processes with descriptors referencing
@@ -235,7 +341,7 @@ the same system-wide file description can write to the same open file.
      section of the man page for `close(2)`.)
 
 
-# Part 4: Pipes
+## Part 4: Pipes
 
 In this section, you will learn how pipes are created and used to communicate
 between different processes.
@@ -321,7 +427,7 @@ between different processes.
      `pipe(7)` and `pipe(2)`)
 
 
-# Part 5: `execve()` Overview
+## Part 5: `execve()` Overview
 
 Open `exec.c`, and look at what it does.  Then answer the following questions.
 Note that you will be _testing_ the behavior of `exec.c` in Part 6, so you
@@ -332,7 +438,7 @@ might want to revisit these questions after you go through that part.
  27. *At what point will the final `printf()` statement get executed?*
 
 
-# Part 6: `execve()` Experimentation
+## Part 6: `execve()` Experimentation
 
 In the next steps, you will be using the `ps` command to examine how a process
 associated with the `exec` program changes over time. Because of this, you
@@ -374,7 +480,7 @@ Now would be a good time to review questions 26 and 27, both to confirm or
 update your answers and to check your understanding.
 
 
-# Part 7: Combining `fork()` and `execve()`
+## Part 7: Combining `fork()` and `execve()`
 
 In this section, you will learn hands-on how file descriptors are inherited by
 child processes after a call to `fork()` and maintained after a call to
@@ -405,7 +511,7 @@ child processes after a call to `fork()` and maintained after a call to
      file!  You could fix this by using `fflush()` immediately after `fprintf()`.
 
 
-# Part 8: File Descriptor Duplication
+## Part 8: File Descriptor Duplication
 
 In this section, you will learn hands-on how file descriptors can be duplicated
 using `dup2()`.

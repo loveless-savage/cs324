@@ -377,8 +377,9 @@ between different processes.
          know where the string ends.  If you have not properly added the null
          character, the command will yield unexpected results.  See an example
          of adding the null byte
-         [here](../01d-hw-strings-io-env#part-5---inputoutput) (i.e., after
+         [here](../01c-hw-strings-io-env#part-3---inputoutput) (i.e., after
          `read()` was used to read bytes from the file).
+       - Call `close()` on the read end of the pipe.
 
      Re-`make` and run the newly recompiled `fork`.  *Show the output of your
      program.*

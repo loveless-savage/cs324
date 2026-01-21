@@ -43,7 +43,7 @@ multiple jobs.
 - [Helper Functions](#helper-functions)
   - [`parseline()`](#parseline)
   - [Job Handling Functions](#job-handling-functions)
-- [Debugging Helps](#debugging-helps)
+- [Debugging Hints](#debugging-hints)
 - [Automated Testing](#automated-testing)
 - [Evaluation](#evaluation)
 - [Submission](#submission)

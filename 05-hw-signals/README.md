@@ -248,7 +248,6 @@ seconds have passed!
 1
 2
 7
-10
 ```
 
 ### Scenario 7
@@ -256,6 +255,7 @@ seconds have passed!
 1
 2
 7
+10
 ```
 
 ### Scenario 8

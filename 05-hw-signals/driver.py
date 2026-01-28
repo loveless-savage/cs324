@@ -153,11 +153,11 @@ class KillTest5(KillTest):
     
 class KillTest6(KillTest):
     scenario = 6
-    solution = [1, 2, 7, 10]
+    solution = [1, 2, 7]
     
 class KillTest7(KillTest):
     scenario = 7
-    solution = [1, 2, 7]
+    solution = [1, 2, 7, 10]
     
 class KillTest8(KillTest):
     scenario = 8

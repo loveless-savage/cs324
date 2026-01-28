@@ -158,8 +158,6 @@ Here are some commands that you might use to help you:
  - `echo`
  - `grep`
  - `gzip`
- - `head`
- - `md5sum`
  - `sha1sum`
  - `sort`
  - `tar`

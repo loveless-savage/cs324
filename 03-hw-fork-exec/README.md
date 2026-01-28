@@ -44,14 +44,14 @@ simplify compiliation.  `make` looks for a file called `Makefile` that contains
 some instructions to follow.
 
 Display the contents of `Makefile`, contained in the directory associated with
-this assignment.
+this assignment.  Here is just a snippet from that file:
 
 ```make
 fork: fork.c
 	$(CC) $(CFLAGS) -o fork fork.c
 ```
 
-The following lines indicate that: 1) the executable `fork` comes from
+The lines above indicate that: 1) the executable `fork` comes from
 `fork.c`; and 2) the command to build `fork` from `fork.c` is
 `$(CC) $(CFLAGS) -o fork fork.c`.  But before the command is run, `$(CC)` and
 `$(CFLAGS)` are replaced with the values that were assigned to them earlier in
@@ -377,8 +377,9 @@ between different processes.
          know where the string ends.  If you have not properly added the null
          character, the command will yield unexpected results.  See an example
          of adding the null byte
-         [here](../01d-hw-strings-io-env#part-5---inputoutput) (i.e., after
+         [here](../01c-hw-strings-io-env#part-3---inputoutput) (i.e., after
          `read()` was used to read bytes from the file).
+       - Call `close()` on the read end of the pipe.
 
      Re-`make` and run the newly recompiled `fork`.  *Show the output of your
      program.*

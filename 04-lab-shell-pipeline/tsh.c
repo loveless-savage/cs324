@@ -1,11 +1,13 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and login ID here>
+ * Andrew Jones
+ * akj53
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
 #include <signal.h>
@@ -84,8 +86,8 @@ int main(int argc, char **argv)
 		}
 
 		/* Evaluate the command line */
-		eval(cmdline);
 		fflush(stdout);
+		eval(cmdline);
 		fflush(stdout);
 	} 
 
@@ -101,6 +103,119 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+	// tokenize commands and redirect symbols
+	char *argv[MAXARGS];
+	parseline(cmdline,argv);
+	// if 'quit' is passed as the command, abort
+	if (builtin_cmd(argv) != 0)
+		return;
+
+	// interpret redirect instructions and separate relevant arguments
+	int cmd[MAXARGS], stdin_redir[MAXARGS], stdout_redir[MAXARGS];
+	int cmd_count = parseargs(argv,cmd,stdin_redir,stdout_redir);
+
+	// spawn children for each command, equipped with pipes & redirects as necessary
+	int pnum = 0;
+	int pid = -1;
+	int pidlist[cmd_count];
+	int pgid = -1;
+
+	int pipefd[2] = {-1,-1};
+	int pipefd_old = -1;
+	while (pnum < cmd_count) {
+		// hold onto read-pipe from the previous command
+		pipefd_old = pipefd[0];
+		// initialize pipe connecting to successive child process, if applicable
+		if (pnum < cmd_count-1) {
+			// create pipe for subsequent command
+			if (pipe(pipefd) == -1) {
+				perror("eval()");
+				exit(1);
+			}
+			//printf("pipe created: {%d,%d}\n",pipefd[0],pipefd[1]);
+		}
+
+		// spawn child[pnum]
+		pid = fork();
+		if (pid == -1) { // failed to spawn child
+			perror("eval()");
+			exit(1);
+		} else if (pid == 0) { // child
+			// redirect file into stdin?
+			if (stdin_redir[pnum] > 0) {
+				int auxin = open(argv[stdin_redir[pnum]],O_RDONLY);
+				//printf("reading file '%s' [fd=%d]\n",argv[stdin_redir[pnum]],auxin);
+				if (auxin == -1) {
+					fprintf(stderr,"eval() [child %d] opening file %s: ",pnum,argv[stdin_redir[pnum]]);
+					perror(NULL);
+				}
+				//printf("[child %d] duplicating fd=%d onto stdin\n",pnum,auxin);
+				dup2(auxin,STDIN_FILENO);
+				close(auxin);
+			// redirect previous pipe read-end into stdin?
+			} else if (pnum > 0) {
+				//printf("[child %d] duplicating pipe %d onto stdin\n",pnum,pipefd_old);
+				dup2(pipefd_old,STDIN_FILENO);
+				close(pipefd_old);
+			}
+
+			// redirect stdout to file?
+			if (stdout_redir[pnum] > 0) {
+				int auxout = open(argv[stdout_redir[pnum]], O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+				//printf("writing to file '%s' [fd=%d]\n",argv[stdout_redir[pnum]],auxout);
+				if (auxout == -1) {
+					fprintf(stderr,"eval() [child %d] opening file %s: ",pnum,argv[stdout_redir[pnum]]);
+					perror(NULL);
+				}
+				//printf("[child %d] duplicating fd=%d onto stdout\n",pnum,pipefd[1]);
+				dup2(auxout,STDOUT_FILENO);
+				close(auxout);
+			// redirect current pipe write-end into stdout?
+			} else if (pnum < cmd_count-1) {
+				//printf("[child %d] duplicating pipe %d onto stdout\n",pnum,pipefd[1]);
+				dup2(pipefd[1],STDOUT_FILENO);
+				close(pipefd[1]);
+			}
+
+			// we have an extra pipe read-end open, intended for the successive child
+			if (pnum < cmd_count-1 && close(pipefd[0]) < 0) {
+				fprintf(stderr,"eval() [child %d] closing pipe: ",pnum);
+				perror(NULL);
+				exit(1);
+			}
+
+			execve(argv[cmd[pnum]],&argv[cmd[pnum]],environ);
+			// if execution fails, print error message and return control to parent shell
+			fprintf(stderr,"%s: ",argv[cmd[pnum]]);
+			perror(NULL);
+			exit(1);
+		} else { // parent
+			// close read end of previous pipe
+			if (pipefd_old > 0 && close(pipefd_old) < 0) {
+				perror("eval() closing old pipe read end");
+			}
+			// close write end of current pipe
+			if (pnum < cmd_count-1 && close(pipefd[1]) < 0) {
+				perror("eval() closing old pipe write end");
+			}
+
+			pidlist[pnum] = pid;
+			// set groupids of all child processes to match the pid of child 0
+			if (pnum == 0) {
+				pgid = pid;
+			}
+			if (setpgid(pid, pgid) < 0){
+				perror("eval() [parent]");
+				exit(1);
+			}
+			pnum++;
+		}
+	}
+
+	// wait for all processes to complete
+	for (pnum=0; pnum<cmd_count; pnum++) {
+		waitpid(pidlist[pnum],NULL,0);
+	}
 	return;
 }
 
@@ -162,6 +277,17 @@ int parseargs(char **argv, int *cmds, int *stdin_redir, int *stdout_redir)
 		argindex++;
 	}
 
+#if FALSE
+	printf("parseargs() successful\n");
+	for(int i=0; i<cmd_count; i++) {
+		printf("argv[%d] = \"%s\"\t",cmd[i],argv[cmd[i]]);
+		for(int j=0; argv[cmd[i]+j]; j++) {
+			printf("\targv[%d] = \"%s\"",cmd[i]+j,argv[cmd[i]+j]);
+		}
+		printf("\n");
+	}
+#endif
+
 	return cmdindex + 1;
 }
 
@@ -215,6 +341,13 @@ int parseline(const char *cmdline, char **argv)
 	if (argc == 0)  /* ignore blank line */
 		return 1;
 
+#if FALSE
+	printf("parseline() successful\n");
+	for(int i=0; argv[i]; i++) {
+		printf("argv[%d] = \"%s\"\n",i,argv[i]);
+	}
+#endif
+
 	/* should the job run in the background? */
 	if ((bg = (*argv[argc-1] == '&')) != 0) {
 		argv[--argc] = NULL;
@@ -228,6 +361,10 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+	if (!argv[0])
+		return 0;
+	if (strcmp(argv[0],"quit")==0)
+		exit(0);
 	return 0;     /* not a builtin command */
 }
 

@@ -79,6 +79,7 @@ struct job_t *getjobjid(struct job_t *jobs, int jid);
 int pid2jid(pid_t pid); 
 void listjobs(struct job_t *jobs);
 
+void block_signals(int block);
 void usage(void);
 void unix_error(char *msg);
 void app_error(char *msg);
@@ -165,6 +166,37 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+	char *argv[MAXARGS];
+	int job_state = parseline(cmdline,argv);
+	// finish evaluation if a builtin command gets processed
+	if (builtin_cmd(argv)!=0) {
+		return;
+	}
+	block_signals(1);
+	int pid = fork();
+	if (pid == 0) { // child
+		// reset child signal handlers + blocking to default behavior
+		Signal(SIGINT,  SIG_DFL);
+		Signal(SIGTSTP, SIG_DFL);
+		Signal(SIGCHLD, SIG_DFL);
+		block_signals(0);
+		execve(argv[0],&argv[0],environ);
+		// if command cannot be executed, print error message
+		fprintf(stderr,"%s: Command not found\n",argv[0]);
+		exit(1);
+	} else { // parent
+		setpgid(pid, pid);
+		// add new process to job list
+		addjob(jobs, pid, job_state+1, cmdline);
+		// now that job recording is complete, we can unblock signals
+		block_signals(0);
+		if (job_state == 0) { // wait for foreground process
+			waitfg(pid);
+		} else { // report running background process and finish evaluation cycle
+			struct job_t *currentjob = getjobpid(jobs, pid);
+			printf("[%d] (%d) %s", currentjob->jid, currentjob->pid, currentjob->cmdline);
+		}
+	}
 	return;
 }
 
@@ -231,7 +263,20 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-	return 0;     /* not a builtin command */
+	if (argv == NULL || argv[0] == NULL) {
+		return 1;
+	}
+	char* arg0 = argv[0];
+	if (!strcmp(arg0,"quit")) {
+		exit(0);
+	} else if (!strcmp(arg0,"fg") || !strcmp(arg0, "bg")) {
+		do_bgfg(argv);
+	} else if (!strcmp(arg0,"jobs")) {
+		listjobs(jobs);
+	} else {
+		return 0;     /* not a builtin command */
+	}
+	return 1;
 }
 
 /* 
@@ -239,6 +284,37 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+	if (argv[1] == NULL) {
+		printf("%s command requires PID or %%jobid argument\n",argv[0]);
+		return;
+	}
+	int isjobnum = (argv[1][0] == '%');
+	// try to parse the 2nd argument as an integer, excluding the '%' if necessary
+	int jobnum = atoi(argv[1]+isjobnum);
+	struct job_t *changejob = isjobnum? getjobjid(jobs,jobnum) : getjobpid(jobs,jobnum);
+	// error checking
+	if (changejob == NULL) {
+		if (jobnum == 0 && strcmp((argv[1]+isjobnum),"0")) { // couldn't parse integer
+			printf("%s: argument must be a PID or %%jobid\n",argv[0]);
+		} else if (isjobnum) { // job number not found
+			printf("%s: No such job\n",argv[1]);
+		} else { // job pid not found
+			printf("(%s): No such process\n",argv[1]);
+		}
+		return;
+	}
+
+	if (!strcmp(argv[0],"fg")) {
+		// restart process group associated with changejob, then wait for completion
+		changejob->state = FG;
+		kill(-1*changejob->pid,SIGCONT);
+		waitfg(changejob->pid);
+	} else if (!strcmp(argv[0], "bg")) {
+		// restart process group of changejob, then let run in the background
+		changejob->state = BG;
+		printf("[%d] (%d) %s", changejob->jid, changejob->pid, changejob->cmdline);
+		kill(-1*changejob->pid,SIGCONT);
+	}
 	return;
 }
 
@@ -247,6 +323,9 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+	while (fgpid(jobs) == pid) {
+		sleep(1);
+	}
 	return;
 }
 
@@ -263,6 +342,26 @@ void waitfg(pid_t pid)
  */
 void sigchld_handler(int sig) 
 {
+	if (verbose)
+		printf("sigchld_handler: entering\n");
+	int dead_pid, dead_status;
+	// identify all stopped or terminated children
+	while ((dead_pid = waitpid(-1, &dead_status, WNOHANG|WUNTRACED))>0) {
+		struct job_t *dead_job = getjobpid(jobs, dead_pid);
+		// stopped?
+		if (WIFSTOPPED(dead_status)) {
+			printf("Job [%d] (%d) stopped by signal %d\n", dead_job->jid, dead_job->pid,WSTOPSIG(dead_status));
+			dead_job->state = ST;
+		// terminated by signal?
+		} else if (WIFSIGNALED(dead_status)) {
+			printf("Job [%d] (%d) terminated by signal %d\n", dead_job->jid, dead_job->pid,WTERMSIG(dead_status));
+			deletejob(jobs,dead_pid);
+		// terminated normally?
+		} else if (WIFEXITED(dead_status)) {
+			deletejob(jobs,dead_pid);
+			//printf("Terminated normally (pid=%d)\n",dead_pid);
+		}
+	}
 	return;
 }
 
@@ -273,6 +372,10 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+	if (verbose)
+		printf("sigint_handler: entering\n");
+	// pass signal along to foreground group
+	kill(-1*fgpid(jobs),sig);
 	return;
 }
 
@@ -283,6 +386,10 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+	if (verbose)
+		printf("sigtstp_handler: entering\n");
+	// pass signal along to foreground group
+	kill(-1*fgpid(jobs),sig);
 	return;
 }
 
@@ -448,6 +555,20 @@ void listjobs(struct job_t *jobs)
 /***********************
  * Other helper routines
  ***********************/
+
+/*
+ * block_signals - toggle blocking on job control signals
+ */
+void block_signals(int block) {
+	sigset_t mask;
+	sigemptyset(&mask);
+	if (block) {
+		sigaddset(&mask, SIGCHLD);
+		sigaddset(&mask, SIGINT);
+		sigaddset(&mask, SIGTSTP);
+	}
+	sigprocmask(SIG_SETMASK, &mask, NULL);
+}
 
 /*
  * usage - print a help message

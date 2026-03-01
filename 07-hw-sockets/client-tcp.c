@@ -9,9 +9,7 @@
 
 #include "sockhelper.h"
 
-#define BUF_SIZE 4096
-#define CHUNK_SIZE 512
-#define RECV_SIZE 16384
+#define BUF_SIZE 500
 
 int main(int argc, char *argv[]) {
 
@@ -170,38 +168,42 @@ int main(int argc, char *argv[]) {
 
 	/* SECTION C - interact with server; send, receive, print messages */
 
-	// collect input from stdin until EOF is reached
-	unsigned char buf[BUF_SIZE];
-	int bytes_read = 1, tot_bytes_read = 0;
-	int bytes_to_read = CHUNK_SIZE;
-	while(bytes_read > 0) {
-		if (tot_bytes_read > BUF_SIZE-CHUNK_SIZE)
-			bytes_to_read = BUF_SIZE-tot_bytes_read;
-		bytes_read = read(0, buf+tot_bytes_read, bytes_to_read);
-		tot_bytes_read += bytes_read;
+	// Send remaining command-line arguments as separate
+	// messages, and read responses from server.
+	for (int j = hostindex + 2; j < argc; j++) {
+		// buf will hold the bytes we read from the socket.
+		char buf[BUF_SIZE];
+
+		size_t len = strlen(argv[j]);
+
+		// Check for buffer overflow.
+		if (len > BUF_SIZE) {
+			fprintf(stderr,
+					"Ignoring long message in argument %d\n", j);
+			continue;
+		}
+
+		// Send bytes to remote socket using send().
+		ssize_t nwritten = send(sfd, argv[j], len, 0);
+
+		if (nwritten < 0) {
+			perror("send");
+			exit(EXIT_FAILURE);
+		}
+		printf("Sent %zd bytes: %s\n", len, argv[j]);
+
+		// Read bytes from remote socket using recv().
+		/*ssize_t nread = recv(sfd, buf, BUF_SIZE, 0);
+		buf[nread] = '\0';
+		if (nread < 0) {
+			perror("read");
+			exit(EXIT_FAILURE);
+		}
+		printf("Received %zd bytes: %s\n", nread, buf);
+		*/ // FIXME
+
 	}
 
-	// send collected data to server
-	int bytes_sent = 1, tot_bytes_sent = 0;
-	int bytes_to_send = CHUNK_SIZE;
-	while(bytes_sent > 0) {
-		if (tot_bytes_sent > tot_bytes_read-CHUNK_SIZE)
-			bytes_to_send = tot_bytes_read-tot_bytes_sent;
-		bytes_sent = send(sfd, buf+tot_bytes_sent, bytes_to_send, 0);
-		tot_bytes_sent += bytes_sent;
-	}
-
-	// collect response from the server
-	unsigned char rcvbuf[RECV_SIZE];
-	int bytes_recv = 1, tot_bytes_recv = 0;
-	int bytes_to_recv = CHUNK_SIZE;
-	while(bytes_recv > 0) {
-		if (tot_bytes_recv > RECV_SIZE-CHUNK_SIZE)
-			bytes_to_recv = RECV_SIZE-tot_bytes_recv;
-		bytes_recv = recv(sfd, rcvbuf+tot_bytes_recv, bytes_to_recv, 0);
-		tot_bytes_recv += bytes_recv;
-	}
-	write(1,rcvbuf,tot_bytes_recv);
-
+	close(sfd);
 	exit(EXIT_SUCCESS);
 }

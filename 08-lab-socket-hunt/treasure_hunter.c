@@ -16,7 +16,10 @@
 #include "sockhelper.h"
 
 int sfd = -1;
-struct sockaddr *remote_addr = NULL;
+int addr_fam = AF_INET;
+struct sockaddr *remote_addr = NULL, *local_addr = NULL;
+char remote_ip[INET6_ADDRSTRLEN], local_ip[INET6_ADDRSTRLEN];
+unsigned short remote_port, local_port;
 socklen_t addr_len = sizeof(struct sockaddr_storage);
 int verbose = 0;
 
@@ -32,7 +35,7 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	char *server_domain_name = argv[1];
-	char *port = argv[2];
+	char *port_in = argv[2];
 	int level = atoi(argv[3]);
 	if (level<0 || level>4) {
 		fprintf(stderr,"argument #3 must be a level number between 0 and 4\n");
@@ -47,37 +50,33 @@ int main(int argc, char *argv[]) {
 	// query remote address info for UDP connection
 	struct addrinfo hints;
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;
+	hints.ai_family = addr_fam;
 	hints.ai_socktype = SOCK_DGRAM;
 
 	struct addrinfo *result;
-	int s = getaddrinfo(server_domain_name,port,&hints,&result);
+	int s = getaddrinfo(server_domain_name,port_in,&hints,&result);
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
 	}
-	// parse query response
+	// parse query response for remote address info
 	struct sockaddr_storage remote_addr_ss;
 	remote_addr = (struct sockaddr *)&remote_addr_ss;
 	memcpy(remote_addr, result->ai_addr, sizeof(struct sockaddr_storage));
-	char remote_ip[INET6_ADDRSTRLEN];
-	unsigned short remote_port;
 	parse_sockaddr(remote_addr, remote_ip, &remote_port);
 	if (verbose) {
 		fprintf(stderr, "Connecting to %s:%d\n", remote_ip, remote_port);
 	}
 	// initialize socket
-	sfd = socket(AF_INET, SOCK_DGRAM, 0);
+	sfd = socket(addr_fam, SOCK_DGRAM, 0);
 	if (sfd<0) {
 		perror("socket");
 		exit(EXIT_FAILURE);
 	}
 	// capture local address info
 	struct sockaddr_storage local_addr_ss;
-	struct sockaddr *local_addr = (struct sockaddr *)&local_addr_ss;
+	local_addr = (struct sockaddr *)&local_addr_ss;
 	s = getsockname(sfd, local_addr, &addr_len);
-	char local_ip[INET6_ADDRSTRLEN];
-	unsigned short local_port;
 	parse_sockaddr(local_addr, local_ip, &local_port);
 
 	// send message and collect response
@@ -91,9 +90,7 @@ int main(int argc, char *argv[]) {
 	unsigned short op_param;
 	unsigned int nonce, req;
 	chunk_len = bufrecv[0];
-	if (chunk_len==0) {
-		// TODO: treasure hunt over
-	} else if (chunk_len>127) {
+	if (chunk_len>127) {
 		// TODO: server error
 	}
 	parse_response(bufrecv,chunk_len,treasure,&op,&op_param,&nonce);
@@ -105,15 +102,35 @@ int main(int argc, char *argv[]) {
 
 	// enter request + response loop
 	while (1) {
-		// follow-up request
-		req = (unsigned int)htonl(nonce+1);
+		// adjust follow-up request based on opcode
+		switch(op) {
+		case 0:
+			req = (unsigned int)htonl(nonce+1);
+			break;
+		case 1:
+			remote_port = op_param;
+			populate_sockaddr(remote_addr,addr_fam,remote_ip,remote_port);
+			req = (unsigned int)htonl(nonce+1);
+			break;
+		case 2:
+			local_port = op_param;
+			populate_sockaddr(local_addr,addr_fam,local_ip,local_port);
+			req = (unsigned int)htonl(nonce+1);
+			break;
+		case 3:
+		default:
+			printf("Op-code %d not yet implemented. Exiting\n",op);
+			exit(EXIT_SUCCESS);
+		}
+
 		if (verbose) {
 			print_bytes((unsigned char *)&req,sizeof(unsigned int));
 		}
 		request((unsigned char *)&req, sizeof(unsigned int), bufrecv);
 
+		// parse new response
 		chunk_len = bufrecv[0];
-		if (chunk_len==0) {
+		if (chunk_len==0) { // we got all the treasure
 			break;
 		} else if (chunk_len>127) {
 			// TODO: server error
@@ -163,7 +180,6 @@ void request(unsigned char *buf, size_t send_size, unsigned char *bufrecv) {
 
 void parse_response(unsigned char *bufrecv, unsigned char chunk_len, unsigned char *treasure, unsigned char *op, unsigned short *op_param, unsigned int *nonce) {
 	memcpy(treasure,&bufrecv[1],chunk_len);
-	//treasure[chunk_len] = '\0';
 
 	*op = bufrecv[chunk_len+1];
 

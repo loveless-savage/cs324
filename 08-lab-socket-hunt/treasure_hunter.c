@@ -85,8 +85,31 @@ int main(int argc, char *argv[]) {
 		perror("recvfrom");
 		exit(EXIT_FAILURE);
 	}
-	printf("Response is %d bytes:\n",(int)nread);
+	printf("Response is %d bytes:",(int)nread);
 	print_bytes(bufrecv,nread);
+
+	// parse response
+	unsigned char chunk_len = bufrecv[0];
+	if (chunk_len==0) {
+		// TODO: treasure hunt over
+	} else if (chunk_len>127) {
+		// TODO: server error
+	}
+	printf("chunk length = %d\t",chunk_len);
+	unsigned char treasure[chunk_len+1];
+	memcpy(treasure,&bufrecv[1],chunk_len);
+	treasure[chunk_len] = '\0';
+	printf("treasure = %s\t",treasure);
+	unsigned char op = bufrecv[chunk_len+1];
+	printf("op = 0x%x\t",op);
+	unsigned short param_ns;
+	memcpy(&param_ns,&bufrecv[chunk_len+2],sizeof(unsigned short));
+	unsigned short op_param = ntohs(param_ns);
+	printf("op_param = 0x%x\t",op_param);
+	unsigned int nonce_ns;
+	memcpy(&nonce_ns,&bufrecv[chunk_len+4],sizeof(unsigned int));
+	unsigned int nonce = (unsigned int)ntohl(nonce_ns);
+	printf("nonce = 0x%x\n",nonce);
 }
 
 
@@ -98,8 +121,8 @@ void prep_msg(unsigned char* buf, int level, int seed) {
 	unsigned int userid = (unsigned int)htonl(USERID);
 	memcpy(&buf[2],&userid,sizeof(unsigned int));
 
-	unsigned short x = htons(seed);
-	memcpy(&buf[6],&x,sizeof(unsigned short));
+	unsigned short seed_ns = htons(seed);
+	memcpy(&buf[6],&seed_ns,sizeof(unsigned short));
 }
 
 void print_bytes(unsigned char *bytes, int byteslen) {

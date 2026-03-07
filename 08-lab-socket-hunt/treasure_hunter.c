@@ -191,6 +191,7 @@ void parse_response(unsigned char *bufrecv, unsigned char chunk_len, unsigned ch
 unsigned int op_action(unsigned char op, unsigned short op_param, unsigned int nonce) {
 	switch((int)op) {
 	case 0:
+		// trivial action
 		return (unsigned int)htonl(nonce+1);
 	case 1:
 		// update remote port to match most recently received opcode parameter
@@ -214,6 +215,28 @@ unsigned int op_action(unsigned char op, unsigned short op_param, unsigned int n
 		}
 		return (unsigned int)htonl(nonce+1);
 	case 3:
+		// read [op_param] UDP datagrams and sum their source ports
+		struct sockaddr_storage temp_addr_ss;
+		struct sockaddr *temp_addr = (struct sockaddr *)&temp_addr_ss;
+		char temp_ip[INET6_ADDRSTRLEN];
+		unsigned short temp_port;
+		ssize_t nread;
+		unsigned int new_nonce = 0;
+		for (int i=0; i<op_param; i++) {
+			// we don't care about the message itself, just the source
+			nread = recvfrom(sfd, NULL, MAX_RECVSIZE, 0, temp_addr, &addr_len);
+			if (nread<0) {
+				perror("recvfrom");
+				exit(EXIT_FAILURE);
+			}
+			// extract the port number and add it to our request integer
+			parse_sockaddr(temp_addr, temp_ip, &temp_port);
+			if (verbose) {
+				printf("Level 3 datagram received from %s:%d",temp_ip,temp_port);
+			}
+			new_nonce += (unsigned int)temp_port;
+		}
+		return (unsigned int)htonl(new_nonce+1);
 	default:
 		printf("Op-code %d not yet implemented. Exiting\n", (int)op);
 		exit(EXIT_SUCCESS);

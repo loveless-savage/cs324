@@ -1,5 +1,6 @@
 /* $begin sbufc */
 #include "sbuf.h"
+#include "stdio.h"
 
 /* Create an empty, bounded, shared FIFO buffer with n slots */
 /* $begin sbuf_init */
@@ -26,10 +27,16 @@ void sbuf_deinit(sbuf_t *sp)
 /* $begin sbuf_insert */
 void sbuf_insert(sbuf_t *sp, int item)
 {
+	printf("insert.wait(slots)\n");fflush(stdout);
     sem_wait(&sp->slots);                          /* Wait for available slot */
+	printf("*insert.wait(slots)\n");fflush(stdout);
+	printf("insert.wait(mutex)\n");fflush(stdout);
     sem_wait(&sp->mutex);                          /* Lock the buffer */
+	printf("*insert.wait(mutex)\n");fflush(stdout);
     sp->buf[(++sp->rear)%(sp->n)] = item;   /* Insert the item */
+	printf("insert.post(mutex)\n");fflush(stdout);
     sem_post(&sp->mutex);                          /* Unlock the buffer */
+	printf("insert.post(items)\n");fflush(stdout);
     sem_post(&sp->items);                          /* Announce available item */
 }
 /* $end sbuf_insert */
@@ -39,10 +46,16 @@ void sbuf_insert(sbuf_t *sp, int item)
 int sbuf_remove(sbuf_t *sp)
 {
     int item;
+	printf("remove.wait(items)\n");fflush(stdout);
     sem_wait(&sp->items);                          /* Wait for available item */
+	printf("*remove.wait(items)\n");fflush(stdout);
+	printf("remove.wait(mutex)\n");fflush(stdout);
     sem_wait(&sp->mutex);                          /* Lock the buffer */
+	printf("*remove.wait(mutex)\n");fflush(stdout);
     item = sp->buf[(++sp->front)%(sp->n)];  /* Remove the item */
+	printf("remove.post(mutex)\n");fflush(stdout);
     sem_post(&sp->mutex);                          /* Unlock the buffer */
+	printf("remove.post(slots)\n");fflush(stdout);
     sem_post(&sp->slots);                          /* Announce available slot */
     return item;
 }

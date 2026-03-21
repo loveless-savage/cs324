@@ -6,42 +6,59 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <pthread.h>
 #include "sockhelper.h"
+#include "sbuf.h"
 
 /* Recommended max object size */
 #define MAX_OBJECT_SIZE 102400
 #define BUF_SIZE 1024
+#define NTHREADS  8
+#define SBUFSIZE  5
 
+sbuf_t sbuf; /* Shared buffer of connected descriptors */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:97.0) Gecko/20100101 Firefox/97.0";
-static const int verbose = 1;
+static const int verbose = 0;
 
 int  complete_request_received(char *);
 void parse_request(char *, char *, char *, char *, char *);
 int  open_sfd(unsigned short);
-void handle_client(int);
+void *handle_client(void *);
+void transaction(int);
 void test_parser();
 void print_bytes(unsigned char *, int);
 
 
 int main(int argc, char *argv[]) {
+	// cmd argument 1 = port#
 	if (argc<2) {
 		printf("Usage: %s [port]\n",argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	unsigned short port_listen = (unsigned short)atoi(argv[1]);
-	printf("opening listening port: ");fflush(stdout);
-	int sfd = open_sfd(port_listen);
-	printf("done\n");fflush(stdout);
-	struct sockaddr_storage remote_addr_ss;
-	struct sockaddr *remote_addr = (struct sockaddr *)&remote_addr_ss;
-	socklen_t addr_len = sizeof(struct sockaddr_storage);
-	while(1) {
-		printf("waiting for connection: ");fflush(stdout);
-		int cfd = accept(sfd,remote_addr,&addr_len);
-		printf("accepted\n");fflush(stdout);
-		handle_client(cfd);
+	
+	// initialize thread pool
+	sbuf_init(&sbuf,SBUFSIZE);
+	pthread_t tid;
+	for (int i = 0; i < NTHREADS; i++) {
+		pthread_create(&tid, NULL, handle_client, NULL);
 	}
-	//printf("%s\n", user_agent_hdr);
+	// open port for receiving requests
+	struct sockaddr_storage request_addr_ss;
+	struct sockaddr *request_addr = (struct sockaddr *)&request_addr_ss;
+	socklen_t addr_len = sizeof(struct sockaddr_storage);
+	if (verbose) printf("opening listening port: ");
+	int sfd = open_sfd(port_listen);
+	if (verbose) printf("done\n");
+
+	// accept connections as they come in and pass them off to the thread pool
+	while(1) {
+		//printf("slots = %ld\titems = %ld\tmutex = %ld\n",sbuf.slots.__align,sbuf.items.__align,sbuf.mutex.__align);
+		if (verbose) printf("waiting for connection\n");
+		int cfd = accept(sfd,request_addr,&addr_len);
+		sbuf_insert(&sbuf, cfd);
+		if (verbose) printf("insert.post connection [%d]\n",cfd);
+	}
 	return 0;
 }
 
@@ -105,7 +122,22 @@ int open_sfd(unsigned short port_listen) {
 	return sfd;
 }
 
-void handle_client(int cfd) {
+void *handle_client(void *vargp) {
+	pthread_detach(pthread_self());
+	if (verbose) printf("(%lu) ready\n",pthread_self());
+	while (1) {
+		// pick up connections as they arrive in the shared buffer
+		int cfd = sbuf_remove(&sbuf);
+		if (verbose) printf("(%lu) remove.wait connection [%d]\n",pthread_self(),cfd);
+		// pass request along to destination server and return the result
+		transaction(cfd);
+		if (verbose) printf("connection [%d] finished\n",cfd);
+	}
+	return NULL;
+}
+
+void transaction(int cfd) {
+	// collect request from client connection
 	char buf[BUF_SIZE];
 	char *head = buf;
 	while (1) {
@@ -115,7 +147,7 @@ void handle_client(int cfd) {
 			exit(EXIT_FAILURE);
 			// if client closes, prepare for the next client connection
 		} else if (nread == 0) {
-			close(cfd); // FIXME
+			close(cfd);
 			return;
 		}
 		head += nread;
@@ -154,7 +186,8 @@ void handle_client(int cfd) {
 	int s = getaddrinfo(hostname,port,&hints,&result);
 	if (s != 0) {
 		fprintf(stderr,"getaddrinfo: %s\n", gai_strerror(s));
-		exit(EXIT_FAILURE);
+		close(cfd);
+		return;
 	}
 	// parse query response for remote address info
 	struct sockaddr_storage remote_addr_ss;
@@ -168,13 +201,15 @@ void handle_client(int cfd) {
 	if (rfd < 0 ||
 			connect(rfd, remote_addr, sizeof(struct sockaddr_storage))<0) {
 		fprintf(stderr,"socket: failed to connect to hostname %s\n",hostname);
-		exit(EXIT_FAILURE);
+		close(cfd);
+		return;
 	}
 	// send request
 	ssize_t nwritten = send(rfd, request, strlen(request), 0);
 	if (nwritten < 0) {
 		perror("send");
-		exit(EXIT_FAILURE);
+		close(cfd);
+		return;
 	}
 	// collect response
 	char response[MAX_OBJECT_SIZE];
@@ -183,7 +218,8 @@ void handle_client(int cfd) {
 		ssize_t nread = recv(rfd, head, MAX_OBJECT_SIZE-(head-response), 0);
 		if (nread < 0) {
 			perror("receiving response");
-			exit(EXIT_FAILURE);
+			close(cfd);
+			return;
 			// if client closes, prepare for the next client connection
 		} else if (nread == 0) {
 			close(rfd);
@@ -196,7 +232,7 @@ void handle_client(int cfd) {
 		print_bytes((unsigned char *)response,head-response);
 	}
 
-	// Return bytes to remote socket using sendto().
+	// Return bytes to client
 	if (send(cfd, response, head-response, 0) < 0) {
 		perror("sending response");
 	}

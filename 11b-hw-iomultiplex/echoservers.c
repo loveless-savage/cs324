@@ -94,7 +94,9 @@ int main(int argc, char **argv)
 		// this program (rfds_ready), in a different scenario, we might
 		// also be waiting for "write" events, in which case the third
 		// argument (wfds_ready) would be non-NULL.
+		printf("before select()\n");fflush(stdout);
 		int nready = select(FD_SETSIZE, &rfds_ready, NULL, NULL, NULL);
+		printf("after select()\n");fflush(stdout);
 
 		for (int i = 0; i < FD_SETSIZE; i++) {
 			if (i == sfd && FD_ISSET(i, &rfds_ready)) {
@@ -127,13 +129,11 @@ int main(int argc, char **argv)
 					printf("Connection from %s:%d\n",
 							remote_ip, remote_port);
 
-					/* UNCOMMENT FOR NONBLOCKING PART 2
 					// set client file descriptor nonblocking
 					if (fcntl(connfd, F_SETFL, fcntl(connfd, F_GETFL, 0) | O_NONBLOCK) < 0) {
 						fprintf(stderr, "error setting socket option\n");
 						exit(1);
 					}
-					*/
 
 					// allocate memory for a new struct
 					// client_info, and populate it with
@@ -166,48 +166,36 @@ int main(int argc, char **argv)
 						active_client->fd, active_client->desc);
 
 				// read from socket and echo back the response.
-				/* UNCOMMENT FOR NONBLOCKING PART 1
 				while (1) {
-				*/
 					char buf[MAXLINE];
-					int len = recv(active_client->fd, buf, MAXLINE, 0);
+					int len = recv(active_client->fd, buf, 1, 0);
 					if (len == 0) { // EOF received
 						close(active_client->fd);
 						// Remove the fd from rfds
 						FD_CLR(active_client->fd, &rfds);
 						free(active_client);
 						fd_to_client_info[i] = NULL;
-						/* UNCOMMENT FOR NONBLOCKING PART 1
 						break;
-						*/
 					} else if (len < 0) {
-						/* UNCOMMENT FOR NONBLOCKING PART 2
 						if (errno == EWOULDBLOCK ||
 								errno == EAGAIN) {
 							// no more data to be read
 						} else {
-						*/
 							perror("client recv");
 							close(active_client->fd);
 							// Remove the fd from rfds
 							FD_CLR(active_client->fd, &rfds);
 							free(active_client);
 							fd_to_client_info[i] = NULL;
-						/* UNCOMMENT FOR NONBLOCKING PART 2
 						}
-						*/
-						/* UNCOMMENT FOR NONBLOCKING PART 1
 						break;
-						*/
 					} else {
 						active_client->total_bytes_read += len;
 						printf("Received %d bytes (total: %d)\n", len,
 								active_client->total_bytes_read);
 						send(active_client->fd, buf, len, 0);
 					}
-				/* UNCOMMENT FOR NONBLOCKING PART 1
 				}
-				*/
 				if ((--nready) == 0) {
 					break;
 				}
